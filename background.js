@@ -2,24 +2,42 @@ importScripts(
   "./node_modules/webextension-polyfill/dist/browser-polyfill.min.js"
 );
 
-const data = { data: ["jj", "kk", "ll"] };
+const data = {};
 
-const sendResponse = function (responseDetails) {
-  console.log(responseDetails.url);
-  console.log(responseDetails.redirectUrl);
-
-  data[responseDetails.url] = responseDetails.url;
-  data[responseDetails.url].push(responseDetails.redirectUrl);
-  console.log(data);
-
-  browser.runtime.sendMessage({
-    from: "background",
-    subject: "redirect",
-    url: responseDetails.url,
-    redirectUrl: responseDetails.redirectUrl,
-  });
+const onBeforeRedirect = function (responseDetails) {
+  if (!data.hasOwnProperty(responseDetails.tabId)) {
+    data[responseDetails.tabId] = [responseDetails.url];
+  }
+  data[responseDetails.tabId].push(responseDetails.redirectUrl);
 };
 
-browser.webRequest.onBeforeRedirect.addListener(sendResponse, {
+browser.webRequest.onBeforeRedirect.addListener(onBeforeRedirect, {
   urls: ["<all_urls>"],
 });
+
+const activeTabUpdated = function (tabId, _changeInfo, _tabInfo) {
+  if (data.hasOwnProperty(tabId)) {
+    browser.action.setBadgeText({ text: "302", tabId });
+  }
+};
+
+browser.tabs.onUpdated.addListener(activeTabUpdated);
+
+const onTabActivated = function (activeInfo) {
+  delete data[activeInfo.tabId];
+  browser.action.setBadgeText({ text: "" });
+};
+
+browser.tabs.onActivated.addListener(onTabActivated);
+
+const handleMessage = function (request, _sender, sendResponse) {
+  if (request.from !== "popup") {
+    return;
+  }
+
+  if (data.hasOwnProperty(request.tabId)) {
+    sendResponse(data[request.tabId]);
+  }
+};
+
+browser.runtime.onMessage.addListener(handleMessage);
