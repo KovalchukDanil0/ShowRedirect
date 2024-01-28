@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Show Redirect",
-  "description": "",
+  "description": "Allows the user to see from which pages this page was redirected, Free and Open Source",
   "version": "1.0",
   "author": "Gomofob",
   "homepage_url": "https://github.com/KovalchukDanil0/ShowRedirect",
